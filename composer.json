@@ -1,0 +1,1 @@
+{"name":"tsara/tsara-php","description":"Official server-side PHP SDK for Tsara.","type":"library","license":"MIT","require":{"php":"^8.2","ext-curl":"*","ext-json":"*"},"require-dev":{"phpunit/phpunit":"^10.5 || ^11.0"},"autoload":{"psr-4":{"Tsara\\":"src/"}},"autoload-dev":{"psr-4":{"Tsara\\Tests\\":"tests/"}},"scripts":{"test":"phpunit"}}
