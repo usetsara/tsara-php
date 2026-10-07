@@ -173,29 +173,36 @@ final class Client
             try { $data = json_decode($response['body'], true, 512, JSON_THROW_ON_ERROR); }
             catch (JsonException) { throw new ApiException('Tsara returned invalid JSON.', $status, requestId: $responseHeaders['x-request-id'] ?? null); }
             $data = is_array($data) ? $data : ['data' => $data];
-            if ($status >= 200 && $status < 300 && ($data['success'] ?? true) !== false) return $data;
+            $apiStatus = (int) ($data['status_code'] ?? 0);
+            $failed = ($data['success'] ?? true) === false
+                || in_array(strtolower((string) ($data['status'] ?? '')), ['failed', 'error'], true)
+                || ($apiStatus >= 400 && $apiStatus <= 599);
+            if ($status >= 200 && $status < 300 && !$failed) return $data;
             throw $this->apiException($status, $data, $responseHeaders);
         }
     }
 
     private function apiException(int $status, array $data, array $headers): ApiException
     {
+        $apiStatus = (int) ($data['status_code'] ?? 0);
+        $errorStatus = $status >= 200 && $status < 300 && $apiStatus >= 400 && $apiStatus <= 599
+            ? $apiStatus : $status;
         $arguments = [
             (string) ($data['message'] ?? 'Tsara API request failed.'),
             $status,
             isset($data['status_code']) ? (int) $data['status_code'] : null,
             is_array($data['errors'] ?? null) ? $data['errors'] : [],
             $headers['x-request-id'] ?? ($data['request_id'] ?? null),
-            in_array($status, self::RETRYABLE_STATUSES, true),
+            in_array($errorStatus, self::RETRYABLE_STATUSES, true),
         ];
         $class = match (true) {
-            $status === 401 => AuthenticationException::class,
-            $status === 403 => AuthorizationException::class,
-            in_array($status, [400, 402, 422], true) => ValidationException::class,
-            $status === 404 => NotFoundException::class,
-            $status === 409 => ConflictException::class,
-            $status === 429 => RateLimitException::class,
-            $status >= 500 => ServerException::class,
+            $errorStatus === 401 => AuthenticationException::class,
+            $errorStatus === 403 => AuthorizationException::class,
+            in_array($errorStatus, [400, 402, 422], true) => ValidationException::class,
+            $errorStatus === 404 => NotFoundException::class,
+            $errorStatus === 409 => ConflictException::class,
+            $errorStatus === 429 => RateLimitException::class,
+            $errorStatus >= 500 => ServerException::class,
             default => ApiException::class,
         };
         return new $class(...$arguments);

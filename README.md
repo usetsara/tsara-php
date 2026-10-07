@@ -117,3 +117,14 @@ API-key and webhook-secret rotation are separate. A rotated API key is returned 
 
 `0.1.x` is a release-candidate line. Validate your test integration before enabling live money movement.
 
+
+## Business wallet transfers
+
+Transfers support both test and live secret keys. Test-key requests use the sandbox wallet.
+Use an idempotency key when creating a transfer. Incoming transfer responses retain
+`direction: IN` and sender details; signed incoming notifications use `transfer.received`.
+
+## Development and publishing
+
+Run `composer install` then `composer check`. See [PUBLISHING.md](PUBLISHING.md)
+for release tags, Packagist submission, and automatic updates.

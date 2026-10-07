@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tsara\Tests;
 
-use LogicException;
 use PHPUnit\Framework\TestCase;
 use Tsara\Client;
 
@@ -19,10 +18,14 @@ final class MoneyMovementResourceTest extends TestCase
         self::assertStringContainsString('"idempotency_key":"idem_12345678"', $seen['body']);
     }
 
-    public function testTransferRejectsTestEnvironment(): void
+    public function testTransferSupportsSandboxWallet(): void
     {
-        $this->expectException(LogicException::class);
-        (new Client('sk_test_example'))->transfers->banks();
+        $seen = [];
+        $client = new Client('sk_test_example', transport: function ($method, $url, $headers, $body) use (&$seen) { $seen = compact('method', 'url', 'headers', 'body'); return ['status' => 200, 'body' => '{"success":true}']; });
+        $client->transfers->create(['amount' => 1000], 'sandbox_transfer_example');
+        self::assertSame('Bearer sk_test_example', $seen['headers']['Authorization']);
+        self::assertSame('sandbox_transfer_example', $seen['headers']['Idempotency-Key']);
+        self::assertStringEndsWith('/transfers', $seen['url']);
     }
 
     public function testPayoutAndRefundUseCanonicalPaths(): void
