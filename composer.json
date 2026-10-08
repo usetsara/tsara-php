@@ -23,8 +23,10 @@
   },
   "scripts": {
     "test": "@php vendor/bin/phpunit",
+    "contract:check": "@php scripts/check-contract.php",
     "check": [
       "@composer validate --strict --no-check-lock",
+      "@contract:check",
       "@test"
     ]
   },
@@ -42,6 +44,8 @@
   "archive": {
     "exclude": [
       "/tests",
+      "/contracts",
+      "/scripts",
       "/examples",
       "/.github",
       "/phpunit.xml",
